@@ -158,7 +158,9 @@ module Paperclip
       # FastImage don`t rewind file if it readed before.
       file.rewind if file.respond_to?(:rewind)
       sizes = FastImage.size(file)
-      !sizes || (sizes[0] <= MAX_IMAGE_RESOLUTION && sizes[1] <= MAX_IMAGE_RESOLUTION)
+      return false if !sizes || !sizes[0]
+
+      sizes[0] <= MAX_IMAGE_RESOLUTION && sizes[1] <= MAX_IMAGE_RESOLUTION
     end
 
     # Returns the public URL of the attachment, with a given style. Note that
