@@ -461,7 +461,7 @@ module Paperclip
       file = Tempfile.new([basename, extname]).tap(&:binmode)
       file.original_filename = filename
       file.write(body)
-      file.tap(&:flush).tap(&:rewind)
+      file.tap(&:close)
     end
   end
 end
