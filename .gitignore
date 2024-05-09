@@ -1,7 +1,10 @@
-.ruby-version
-Gemfile.lock
-gemfiles/*.lock
-gemfiles/.bundle/
-tmp/
-.rubocop-*
+*.sw[nop]
+/tags
+
+/.rubocop-*
+/.ruby-version
+/Gemfile.lock
 /coverage/
+/gemfiles/*.lock
+/gemfiles/.bundle/
+/tmp/

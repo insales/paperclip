@@ -31,6 +31,7 @@ require 'addressable'
 require 'paperclip/upfile'
 require 'paperclip/iostream'
 require 'paperclip/geometry'
+require 'paperclip/logger'
 require 'paperclip/processor'
 require 'paperclip/thumbnail'
 require 'paperclip/recursive_thumbnail'
@@ -51,6 +52,7 @@ require 'active_support/core_ext/class/attribute'
 module Paperclip
   VERSION = "2.2.9.2"
 
+  extend Logger
   extend ActiveSupport::Concern
 
   included do
@@ -64,6 +66,8 @@ module Paperclip
     #   an uploaded image. Defaults to true.
     # * log: Logs progress to the Rails log. Uses ActiveRecord's logger, so honors
     #   log levels, etc. Defaults to true.
+    # * log_level: Log level according to ActiveRecord's logger. Possible values: :debug,
+    #   :info, :warn, :error, :fatal. Defaults to :debug.
     # * command_path: Defines the path at which to find the command line
     #   programs if they are not visible to Rails the system's search path. Defaults to
     #   nil, which uses the first executable found in the user's search path.
@@ -74,6 +78,8 @@ module Paperclip
         :image_magick_path => nil,
         :command_path      => nil,
         :log               => true,
+        :logger            => ActiveRecord::Base.logger,
+        :log_level         => :debug,
         :log_command       => false,
         :swallow_stderr    => true
       }
@@ -126,20 +132,6 @@ module Paperclip
         raise PaperclipError.new("Processor #{name} was not found")
       end
       processor
-    end
-
-    # Log a paperclip-specific line. Uses ActiveRecord::Base.logger
-    # by default. Set Paperclip.options[:log] to false to turn off.
-    def log message
-      logger.info("[paperclip] #{message}") if logging?
-    end
-
-    def logger #:nodoc:
-      ActiveRecord::Base.logger
-    end
-
-    def logging? #:nodoc:
-      options[:log]
     end
   end
 
@@ -315,7 +307,7 @@ module Paperclip
     end
 
     def save_attached_files
-      logger.info("[paperclip] Saving attachments.")
+      log("saving attachments")
       each_attachment do |name, attachment|
         attachment.send(:save)
         # переехало сюда из delayed_paperclip process_in_background. нужно чтобы порядок загрузки - обработки
@@ -325,16 +317,16 @@ module Paperclip
     end
 
     def destroy_attached_files
-      logger.info("[paperclip] Deleting attachments.")
+      log("deleting attachments")
       each_attachment do |_name, attachment|
         attachment.send(:queue_existing_for_delete)
         attachment.send(:flush_deletes)
       end
-      logger.info("[paperclip] Finish deleting attachments.")
+      log("finish deleting attachments")
     end
 
     def flush_attachment_jobs
-      logger.info("[paperclip] flushing jobs.")
+      log("flushing jobs")
       each_attachment do |_name, attachment|
         attachment.try(:flush_jobs)
       end
