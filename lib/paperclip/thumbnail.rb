@@ -22,6 +22,7 @@ module Paperclip
       @source_file_options = options[:source_file_options]
       @whiny            = options[:whiny].nil? ? true : options[:whiny]
       @format           = options[:format]
+      @save_animation   = options[:save_animation]
       @auto_orient         = options[:auto_orient].nil? ? true : options[:auto_orient]
       if @auto_orient && @current_geometry.respond_to?(:auto_orient)
         @current_geometry.auto_orient
@@ -41,6 +42,10 @@ module Paperclip
       not @convert_options.blank?
     end
 
+    def animation_option
+      @save_animation ? "" : "[0]"
+    end
+
     # Performs the conversion of the +file+ into a thumbnail. Returns the Tempfile
     # that contains the new image.
     def make
@@ -51,7 +56,7 @@ module Paperclip
 
       command = <<-end_command
         #{ source_file_options }
-        "#{ File.expand_path(src.path) }[0]"
+        "#{File.expand_path(src.path)}#{animation_option}"
         #{ transformation_command }
         #{ gamma_correction_if_needed }
         "#{ File.expand_path(dst.path) }"
