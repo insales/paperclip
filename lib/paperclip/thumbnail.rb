@@ -53,7 +53,6 @@ module Paperclip
       ext = @format.present? ? ".#{@format}" : nil
       dst = Tempfile.new(["#{@basename}-thumb-", ext])
       dst.binmode
-      binding.pry
 
       if @current_geometry.height > @target_geometry.height ||
          @current_geometry.width > @target_geometry.width
