@@ -54,19 +54,21 @@ module Paperclip
       dst = Tempfile.new(["#{@basename}-thumb-", ext])
       dst.binmode
 
-      command = <<-end_command
-        #{ source_file_options }
-        "#{File.expand_path(src.path)}#{animation_option}"
-        #{ transformation_command }
-        #{ gamma_correction_if_needed }
-        "#{ File.expand_path(dst.path) }"
-      end_command
-      binding.pry
+      if @current_geometry.height > @target_geometry.height ||
+         @current_geometry.width > @target_geometry.width
+        command = <<-end_command
+          #{ source_file_options }
+          "#{File.expand_path(src.path)}#{animation_option}"
+          #{ transformation_command }
+          #{ gamma_correction_if_needed }
+          "#{ File.expand_path(dst.path) }"
+        end_command
 
-      begin
-        _success = Paperclip.run("convert", command.gsub(/\s+/, " "))
-      rescue PaperclipCommandLineError
-        raise PaperclipError, "There was an error processing the thumbnail for #{@basename}" if @whiny
+        begin
+          _success = Paperclip.run("convert", command.gsub(/\s+/, " "))
+        rescue PaperclipCommandLineError
+          raise PaperclipError, "There was an error processing the thumbnail for #{@basename}" if @whiny
+        end
       end
 
       dst
@@ -75,10 +77,6 @@ module Paperclip
     # Returns the command ImageMagick's +convert+ needs to transform the image
     # into the thumbnail.
     def transformation_command
-      binding.pry
-      return if @current_geometry.height < @target_geometry.height &&
-                @current_geometry.width < @target_geometry.width
-
       scale, crop = @current_geometry.transformation_to(@target_geometry, crop?)
       trans = String.new
       trans << "-auto-orient " if auto_orient
