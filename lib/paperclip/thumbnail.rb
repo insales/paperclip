@@ -69,6 +69,8 @@ module Paperclip
         rescue PaperclipCommandLineError
           raise PaperclipError, "There was an error processing the thumbnail for #{@basename}" if @whiny
         end
+      else
+        FileUtils.cp(src, dst)
       end
 
       dst
