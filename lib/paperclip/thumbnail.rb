@@ -76,7 +76,8 @@ module Paperclip
     def transformation_command
       scale, crop = @current_geometry.transformation_to(@target_geometry, crop?)
       trans = String.new
-      trans << "-auto-orient " if auto_orient
+      binding.pry
+      # trans << "-auto-orient " if auto_orient
       trans << "-resize \"#{scale}\"" unless scale.nil? || scale.empty?
       trans << " -crop \"#{crop}\" +repage" if crop
       trans << " #{convert_options}" if convert_options?
