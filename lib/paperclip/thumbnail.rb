@@ -54,10 +54,7 @@ module Paperclip
       dst = Tempfile.new(["#{@basename}-thumb-", ext])
       dst.binmode
 
-      binding.pry
-
-      if @current_geometry.height > @target_geometry.height ||
-         @current_geometry.width > @target_geometry.width
+      if needs_scaling? || crop? || convert_options? || @current_geometry.auto_orient
         command = <<-end_command
           #{ source_file_options }
           "#{File.expand_path(src.path)}#{animation_option}"
@@ -108,6 +105,12 @@ module Paperclip
       else
         ''
       end
+    end
+
+    private
+
+    def needs_scaling?
+      @current_geometry.transformation_to(@target_geometry).first.present?
     end
   end
 end

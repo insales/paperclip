@@ -113,7 +113,8 @@ module Paperclip
         scale_geometry, scale = scaling(dst, ratio)
         crop_geometry         = cropping(dst, ratio, scale)
       else
-        scale_geometry = dst.to_s
+        need_scale = (width > dst.width) || (height > dst.height)
+        scale_geometry = dst.to_s  if need_scale
       end
 
       [scale_geometry, crop_geometry]
