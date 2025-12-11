@@ -11,7 +11,6 @@ module Paperclip
     end
 
     def optimize(_file)
-      binding.pry
       # TODO: use the arg?
       src = @file.path
       dst_file = Tempfile.new(["#{File.basename(src)}-optim", File.extname(src)])
