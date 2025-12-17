@@ -16,8 +16,8 @@ module Paperclip
       geometry          = options[:geometry]
       @file             = file
       @crop             = geometry[-1,1] == '#'
-      @target_geometry  = Geometry.parse geometry
-      @current_geometry = Geometry.from_file @file
+      @target_geometry  = Geometry.parse geometry, lazy: true
+      @current_geometry = Geometry.from_file @file, lazy: true
       @convert_options  = options[:convert_options]
       @source_file_options = options[:source_file_options]
       @whiny            = options[:whiny].nil? ? true : options[:whiny]
@@ -54,18 +54,17 @@ module Paperclip
       dst = Tempfile.new(["#{@basename}-thumb-", ext])
       dst.binmode
 
-      if !needs_scaling? && !crop? && !convert_options? && !@current_geometry.auto_orient
-        FileUtils.cp(src, dst)
-        return dst
-      end
+      #if !needs_scaling? && !crop? && !convert_options? && !@current_geometry.auto_orient
+      #  FileUtils.cp(src, dst)
+      #  return dst
+      #end
 
-      command = <<-end_command
-        #{ source_file_options }
-        "#{File.expand_path(src.path)}#{animation_option}"
-        #{ transformation_command }
-        #{ gamma_correction_if_needed }
-        "#{ File.expand_path(dst.path) }"
-      end_command
+        command = <<-end_command
+          #{ source_file_options }
+          "#{File.expand_path(src.path)}#{animation_option}"
+          #{ transformation_command }
+          "#{ File.expand_path(dst.path) }"
+        end_command
 
       begin
         _success = Paperclip.run("convert", command.gsub(/\s+/, " "))
@@ -111,7 +110,7 @@ module Paperclip
     private
 
     def needs_scaling?
-      @current_geometry.transformation_to(@target_geometry).first.present?
+      @current_geometry.needs_scaling?(@target_geometry)
     end
   end
 end
