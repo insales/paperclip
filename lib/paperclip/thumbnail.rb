@@ -61,6 +61,8 @@ module Paperclip
       binding.pry
 
         command = <<-end_command
+          "#{File.expand_path(src.path)}"
+          "#{ File.expand_path(dst.path) }"
         end_command
 
       begin
