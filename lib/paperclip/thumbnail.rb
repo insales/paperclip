@@ -54,16 +54,19 @@ module Paperclip
       dst = Tempfile.new(["#{@basename}-thumb-", ext])
       dst.binmode
 
-      #if !needs_scaling? && !crop? && !convert_options? && !@current_geometry.auto_orient
-      #  FileUtils.cp(src, dst)
-      #  return dst
-      #end
-      binding.pry
+      if !source_file_options && !needs_scaling? && !crop? && !convert_options? && !@current_geometry.auto_orient
+        # даже с пустой convert командой изображение ужимается, поэтому здесь просто копируем файл
+        FileUtils.cp(src, dst)
+        return dst
+      end
 
-        command = <<-end_command
-          "#{File.expand_path(src.path)}"
-          "#{ File.expand_path(dst.path) }"
-        end_command
+      command = <<-end_command
+        #{ source_file_options }
+        "#{File.expand_path(src.path)}#{animation_option}"
+        #{ transformation_command }
+        #{ gamma_correction_if_needed }
+        "#{ File.expand_path(dst.path) }"
+      end_command
 
       begin
         _success = Paperclip.run("convert", command.gsub(/\s+/, " "))
