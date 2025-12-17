@@ -106,10 +106,11 @@ module Paperclip
     # will only log if logging in general is set to true as well.
     def run cmd, params = "", expected_outcodes = 0
       command = %Q<#{%Q[#{path_for_command(cmd)} #{params}].gsub(/\s+/, " ")}>
-      command = "#{command} 2>#{bit_bucket}" if Paperclip.options[:swallow_stderr]
+      # command = "#{command} 2>#{bit_bucket}" if Paperclip.options[:swallow_stderr]
       Paperclip.log(command) if Paperclip.options[:log_command]
-      output = `timeout 30 #{command}`
       binding.pry
+      output = `timeout 30 #{command}`
+
       unless [expected_outcodes].flatten.include?($?.exitstatus)
         raise PaperclipCommandLineError, "Error while running #{cmd}"
       end
