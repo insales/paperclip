@@ -58,11 +58,10 @@ module Paperclip
       #  FileUtils.cp(src, dst)
       #  return dst
       #end
+      binding.pry
 
         command = <<-end_command
-          #{ source_file_options }
           "#{File.expand_path(src.path)}#{animation_option}"
-          #{ transformation_command }
           "#{ File.expand_path(dst.path) }"
         end_command
 
