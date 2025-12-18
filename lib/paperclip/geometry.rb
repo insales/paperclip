@@ -119,6 +119,17 @@ module Paperclip
       [scale_geometry, crop_geometry]
     end
 
+    def needs_scaling?(dst)
+      case dst.to_s
+      when /\d+x\d+>/
+        dst.width < width || dst.height < height
+      when /\d+x\d+</
+        dst.width > width || dst.height > height
+      else
+        true
+      end
+    end
+
     private
 
     def scaling(dst, ratio)

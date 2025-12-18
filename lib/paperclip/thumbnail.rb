@@ -54,6 +54,12 @@ module Paperclip
       dst = Tempfile.new(["#{@basename}-thumb-", ext])
       dst.binmode
 
+      if !source_file_options && !needs_scaling? && !crop? && !convert_options? && !@current_geometry.auto_orient
+        # даже с пустой convert командой изображение ужимается, поэтому здесь просто копируем файл
+        FileUtils.cp(src, dst)
+        return dst
+      end
+
       command = <<-end_command
         #{ source_file_options }
         "#{File.expand_path(src.path)}#{animation_option}"
@@ -101,6 +107,12 @@ module Paperclip
       else
         ''
       end
+    end
+
+    private
+
+    def needs_scaling?
+      @current_geometry.needs_scaling?(@target_geometry)
     end
   end
 end
