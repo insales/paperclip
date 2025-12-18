@@ -53,7 +53,7 @@ module Paperclip
       ext = @format.present? ? ".#{@format}" : nil
       dst = Tempfile.new(["#{@basename}-thumb-", ext])
       dst.binmode
-      binding.pry
+
       if !source_file_options && !needs_scaling? && !crop? && !convert_options? && !@current_geometry.auto_orient
         # даже с пустой convert командой изображение ужимается, поэтому здесь просто копируем файл
         FileUtils.cp(src, dst)
