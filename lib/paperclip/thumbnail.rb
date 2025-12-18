@@ -16,8 +16,8 @@ module Paperclip
       geometry          = options[:geometry]
       @file             = file
       @crop             = geometry[-1,1] == '#'
-      @target_geometry  = Geometry.parse geometry, lazy: true
-      @current_geometry = Geometry.from_file @file, lazy: true
+      @target_geometry  = Geometry.parse geometry
+      @current_geometry = Geometry.from_file @file
       @convert_options  = options[:convert_options]
       @source_file_options = options[:source_file_options]
       @whiny            = options[:whiny].nil? ? true : options[:whiny]
@@ -53,7 +53,7 @@ module Paperclip
       ext = @format.present? ? ".#{@format}" : nil
       dst = Tempfile.new(["#{@basename}-thumb-", ext])
       dst.binmode
-
+      binding.pry
       if !source_file_options && !needs_scaling? && !crop? && !convert_options? && !@current_geometry.auto_orient
         # даже с пустой convert командой изображение ужимается, поэтому здесь просто копируем файл
         FileUtils.cp(src, dst)

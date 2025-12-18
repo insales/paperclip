@@ -3,7 +3,7 @@
 module Paperclip
   # Defines the geometry of an image.
   class Geometry
-    attr_accessor :height, :width, :modifier, :lazy
+    attr_accessor :height, :width, :modifier
 
     EXIF_ROTATED_ORIENTATION_VALUES = [5, 6, 7, 8].freeze
 
@@ -20,13 +20,11 @@ module Paperclip
       @height = height.to_f
       @width  = width.to_f
       @modifier = modifier
-      @lazy = false
     end
 
     # Uses ImageMagick to determing the dimensions of a file, passed in as either a
     # File or path.
-    def self.from_file(file, lazy: false)
-      @lazy = lazy
+    def self.from_file(file)
       file = file.path if file.respond_to? "path"
       geometry = begin
                    Paperclip.run("identify", %(-format "%wx%h,%[exif:orientation]" "#{file}"[0]))
@@ -38,8 +36,7 @@ module Paperclip
     end
 
     # Parses a "WxH" formatted string, where W is the width and H is the height.
-    def self.parse(string, lazy: false)
-      @lazy = lazy
+    def self.parse(string)
       match = string&.match(/\b(\d*)x?(\d*)\b(?:,(\d?))?([\>\<\#\@\%^!])?/i)
       return unless match
 
@@ -110,13 +107,13 @@ module Paperclip
     # destination Geometry would be completely filled by the source image, and any
     # overhanging image would be cropped. Useful for square thumbnail images. The cropping
     # is weighted at the center of the Geometry.
-    def transformation_to(dst, crop = false)
+    def transformation_to(dst, crop = false, lazy: false)
       if crop
         ratio = Geometry.new(dst.width / width, dst.height / height)
         scale_geometry, scale = scaling(dst, ratio)
         crop_geometry         = cropping(dst, ratio, scale)
       else
-        scale_geometry = !lazy || needs_scaling?(dst) ? dst.to_s : nil
+        scale_geometry = dst.to_s
       end
 
       [scale_geometry, crop_geometry]
