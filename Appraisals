@@ -2,6 +2,7 @@
 
 appraise 'rails_70' do
   gem 'rails', '~>7.0.8'
+  gem 'concurrent-ruby', '1.3.4' # need logger dependency
 end
 
 appraise 'rails_71' do
