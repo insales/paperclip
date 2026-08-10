@@ -121,7 +121,7 @@ class NoCacheS3Test < Test::Unit::TestCase
     context "with download_by_url" do
       setup do
         @instance.avatar.class.instance_variable_set(:@download_by_url, true)
-        @instance.avatar.stubs(:presigned_url).returns("http://example.com/some_file") # чтобы не стабать store.object.presigned_uri
+        @instance.avatar.stubs(:download_url).returns("http://example.com/some_file") # чтобы не стабать store.object.presigned_uri
         require 'open-uri'
         # правильнее было бы webmock притащить и сам запрос застабить, но ради одного теста жирновато
         Net::HTTP.any_instance.stubs(:start).yields(nil)

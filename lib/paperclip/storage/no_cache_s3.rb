@@ -101,8 +101,13 @@ module Paperclip
         return unless synced_to?(self.class.main_store_id)
 
         if self.class.download_by_url
-          URI.parse(presigned_url(style)).open do |tempfile|
-            create_tempfile(tempfile.read)
+          begin
+            URI.parse(download_url(style)).open do |tempfile|
+              create_tempfile(tempfile.read)
+            end
+          rescue OpenURI::HTTPError, SocketError, Errno::ECONNREFUSED, Net::OpenTimeout, Net::ReadTimeout => e
+            Paperclip.log("download_by_url failed (#{e.class}: #{e.message}), fallback to API")
+            download_from_store(self.class.main_store_id, style_key)
           end
         else
           download_from_store(self.class.main_store_id, style_key)
