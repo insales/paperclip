@@ -108,7 +108,6 @@ module Paperclip
       command = %Q<#{%Q[#{path_for_command(cmd)} #{params}].gsub(/\s+/, " ")}>
       command = "#{command} 2>#{bit_bucket}" if Paperclip.options[:swallow_stderr]
       Paperclip.log(command) if Paperclip.options[:log_command]
-      binding.pry
       output = `timeout #{cmd == "convert" ? 60 : 30} #{command}`
       unless [expected_outcodes].flatten.include?($?.exitstatus)
         raise PaperclipCommandLineError, "Error while running #{cmd}"
