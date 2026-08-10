@@ -191,19 +191,11 @@ module Paperclip
 
       private
 
-      # К ссылке, сформированной по паттерну (например, через наш CDN), добавляем параметры с подписью
-      def presigned_url(style)
-        uri = Addressable::URI.parse(storage_url(style))
-        uri.host = uri.normalized_host # punycode домена
-        basic_params = uri.query_values || {}
-        presign_params = Addressable::URI.parse(
-          self.class.store_by(self.class.main_store_id).object(key(style)).presigned_url(:get)
-        ).query_values
-
-        result_params = basic_params.merge(presign_params)
-        uri.query_values = result_params # тут addressable сам заэскейпит параметры
-        uri.path = Addressable::URI.escape(uri.path)
-        uri.to_s
+      # Прямой S3/bucket URL для внутреннего скачивания (reprocess).
+      # Нельзя брать storage_url (CDN аккаунта): подпись AWS считается под host бакета
+      # (X-Amz-SignedHeaders=host), а кастомный CDN часто отдаёт 404.
+      def download_url(style)
+        self.class.store_by(self.class.main_store_id).object(key(style)).presigned_url(:get)
       end
 
       def synced_to?(store_id)

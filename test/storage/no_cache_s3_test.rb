@@ -137,6 +137,19 @@ class NoCacheS3Test < Test::Unit::TestCase
         @store1_stub.expects(:put_object).times(1 + (@instance.avatar.options[:styles].keys - [:original]).size)
         assert_no_leftover_tmp { @instance.avatar.reprocess! }
       end
+
+      should "fallback to API when download_by_url returns HTTP error" do
+        Dummy::AvatarAttachment.any_instance.unstub(:download_from_store)
+        uri_stub = stub
+        uri_stub.expects(:open).raises(OpenURI::HTTPError.new('404 Not Found', StringIO.new))
+        URI.stubs(:parse).with("http://example.com/some_file").returns(uri_stub)
+
+        file = stub_file('pixel.gif', @gif_pixel)
+        @instance.avatar.expects(:download_from_store).with(:store_1, @instance.avatar.key(:original)).returns(file)
+        @store1_stub.expects(:put_object).times(1 + (@instance.avatar.options[:styles].keys - [:original]).size)
+
+        assert_no_leftover_tmp { @instance.avatar.reprocess! }
+      end
     end
   end
 
@@ -168,20 +181,18 @@ class NoCacheS3Test < Test::Unit::TestCase
     end
   end unless ENV['CI']
 
-  context 'generating presigned_url' do
+  context 'generating download_url' do
     setup do
-      Dummy::AvatarAttachment.any_instance.stubs(:storage_url).returns('http://домен.pф/ключ?param1=параметр')
       object_stub = mock
-      object_stub.stubs(:presigned_url).returns('http://другой.домен?param2=param_value')
+      object_stub.stubs(:presigned_url).with(:get).returns('https://bucket.example/images/products/1/key.jpg?X-Amz-Signature=abc')
       @store1_stub.stubs(:object).returns(object_stub)
     end
 
-    should 'escape cyrillic and work' do
-      @instance.avatar = stub_file('кириллица.txt', 'qwe')
+    should 'use main store object presigned url without CDN host' do
+      @instance.avatar = stub_file('pixel.gif', @gif_pixel)
       assert_equal(
-        "http://xn--d1acufc.xn--p-eub/%D0%BA%D0%BB%D1%8E%D1%87?"\
-        "param1=%D0%BF%D0%B0%D1%80%D0%B0%D0%BC%D0%B5%D1%82%D1%80&param2=param_value",
-        @instance.avatar.send(:presigned_url, :original)
+        'https://bucket.example/images/products/1/key.jpg?X-Amz-Signature=abc',
+        @instance.avatar.send(:download_url, :original)
       )
     end
   end
