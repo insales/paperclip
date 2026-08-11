@@ -41,7 +41,9 @@ module Paperclip
           end
           @store_ids = options[:stores].keys.map(&:to_sym)
           @main_store_id = store_ids.first
-          @url_template = options.fetch(:url).gsub(':key', key_template).gsub(':bucket_url', store_by(main_store_id).url)
+          @url_template = options.fetch(:url)
+            .gsub(':key', key_template)
+            .gsub(':bucket_url', store_by(main_store_id).url)
           @download_by_url = options[:download_by_url]
           @upload_options = options[:upload_options] || {}
         end
