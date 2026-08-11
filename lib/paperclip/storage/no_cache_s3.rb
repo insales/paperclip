@@ -41,9 +41,7 @@ module Paperclip
           end
           @store_ids = options[:stores].keys.map(&:to_sym)
           @main_store_id = store_ids.first
-          @url_template = options.fetch(:url)
-            .gsub(':key', key_template)
-            .gsub(':bucket_url', store_by(main_store_id).url)
+          @url_template = options.fetch(:url).gsub(':key', key_template).gsub(':bucket_url', store_by(main_store_id).url)
           @download_by_url = options[:download_by_url]
           @upload_options = options[:upload_options] || {}
         end
@@ -107,6 +105,7 @@ module Paperclip
             end
           rescue OpenURI::HTTPError, SocketError, Errno::ECONNREFUSED, Net::OpenTimeout, Net::ReadTimeout => e
             Paperclip.log("download_by_url failed (#{e.class}: #{e.message}), fallback to API")
+            binding.pry
             download_from_store(self.class.main_store_id, style_key)
           end
         else
@@ -191,9 +190,24 @@ module Paperclip
 
       private
 
+      # К ссылке, сформированной по паттерну (например, через наш CDN), добавляем параметры с подписью
+      def presigned_url(style)
+        uri = Addressable::URI.parse(storage_url(style))
+        uri.host = uri.normalized_host # punycode домена
+        basic_params = uri.query_values || {}
+        presign_params = Addressable::URI.parse(
+          self.class.store_by(self.class.main_store_id).object(key(style)).presigned_url(:get)
+        ).query_values
+
+        result_params = basic_params.merge(presign_params)
+        uri.query_values = result_params # тут addressable сам заэскейпит параметры
+        uri.path = Addressable::URI.escape(uri.path)
+        uri.to_s
+      end
+
       # Прямой S3/bucket URL для внутреннего скачивания (reprocess).
       # Нельзя брать storage_url (CDN аккаунта): подпись AWS считается под host бакета
-      # (X-Amz-SignedHeaders=host), а кастомный CDN часто отдаёт 404.
+      # (X-Amz-SignedHeaders=host), а кастомный CDN на данный момент отдаёт 404.
       def download_url(style)
         self.class.store_by(self.class.main_store_id).object(key(style)).presigned_url(:get)
       end
