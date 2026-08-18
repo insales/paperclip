@@ -501,7 +501,8 @@ module Paperclip
     end
 
     def subject_to_post_process?
-      content_type.include?('image') && content_type.exclude?('svg') && content_type.exclude?('vnd.')
+      type = content_type.to_s
+      type.include?('image') && !type.include?('svg') && !type.include?('vnd.')
     end
   end
 end

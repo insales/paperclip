@@ -5,6 +5,7 @@ require 'sidekiq'
 require 'sidekiq/testing'
 require 'aws-sdk-s3'
 require 'base64'
+require 'socket'
 
 require 'delayed_paperclip'
 DelayedPaperclip::Railtie.insert
@@ -104,6 +105,13 @@ class NoCacheS3Test < Test::Unit::TestCase
     assert_empty(leftover_files)
   end
 
+  def minio_running?
+    TCPSocket.new('127.0.0.1', 9002).close
+    true
+  rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError
+    false
+  end
+
   context "reprocess" do
     setup do
       Sidekiq::Testing.fake!
@@ -121,7 +129,7 @@ class NoCacheS3Test < Test::Unit::TestCase
     context "with download_by_url" do
       setup do
         @instance.avatar.class.instance_variable_set(:@download_by_url, true)
-        @instance.avatar.stubs(:download_url).returns("http://example.com/some_file") # чтобы не стабать store.object.presigned_uri
+        @instance.avatar.stubs(:unpresigned_url).returns("http://example.com/some_file") # чтобы не стабать store.object.presigned_uri
         require 'open-uri'
         # правильнее было бы webmock притащить и сам запрос застабить, но ради одного теста жирновато
         Net::HTTP.any_instance.stubs(:start).yields(nil)
@@ -168,11 +176,10 @@ class NoCacheS3Test < Test::Unit::TestCase
     end
 
     should "add job and process" do
-      # @store1_stub.expects(:put_object).once
-      # @store2_stub.expects(:put_object).never
+      omit 'minio is not running on localhost:9002' unless minio_running?
+
       assert_no_leftover_tmp do
         @instance.update!(avatar: stub_file('pixel.gif', @gif_pixel))
-        # @instance.update!(avatar: File.open('sample_notebook_1.jpg'))
       end
       assert_equal(1, DelayedPaperclip::Jobs::Sidekiq.jobs.size)
 
@@ -181,7 +188,25 @@ class NoCacheS3Test < Test::Unit::TestCase
     end
   end unless ENV['CI']
 
-  context 'generating download_url' do
+  context 'generating presigned_url' do
+    setup do
+      Dummy::AvatarAttachment.any_instance.stubs(:storage_url).returns('http://домен.pф/ключ?param1=параметр')
+      object_stub = mock
+      object_stub.stubs(:presigned_url).returns('http://другой.домен?param2=param_value')
+      @store1_stub.stubs(:object).returns(object_stub)
+    end
+
+    should 'escape cyrillic and work' do
+      @instance.avatar = stub_file('кириллица.txt', 'qwe')
+      assert_equal(
+        "http://xn--d1acufc.xn--p-eub/%D0%BA%D0%BB%D1%8E%D1%87?"\
+        "param1=%D0%BF%D0%B0%D1%80%D0%B0%D0%BC%D0%B5%D1%82%D1%80&param2=param_value",
+        @instance.avatar.send(:presigned_url, :original)
+      )
+    end
+  end
+
+  context 'generating unpresigned_url' do
     setup do
       object_stub = mock
       object_stub.stubs(:presigned_url).with(:get).returns('https://bucket.example/images/products/1/key.jpg?X-Amz-Signature=abc')
@@ -192,7 +217,7 @@ class NoCacheS3Test < Test::Unit::TestCase
       @instance.avatar = stub_file('pixel.gif', @gif_pixel)
       assert_equal(
         'https://bucket.example/images/products/1/key.jpg?X-Amz-Signature=abc',
-        @instance.avatar.send(:download_url, :original)
+        @instance.avatar.send(:unpresigned_url, :original)
       )
     end
   end
