@@ -129,7 +129,7 @@ class NoCacheS3Test < Test::Unit::TestCase
     context "with download_by_url" do
       setup do
         @instance.avatar.class.instance_variable_set(:@download_by_url, true)
-        @instance.avatar.stubs(:unpresigned_url).returns("http://example.com/some_file") # чтобы не стабать store.object.presigned_uri
+        @instance.avatar.stubs(:url_without_cdn).returns("http://example.com/some_file") # чтобы не стабать store.object.presigned_uri
         require 'open-uri'
         # правильнее было бы webmock притащить и сам запрос застабить, но ради одного теста жирновато
         Net::HTTP.any_instance.stubs(:start).yields(nil)
@@ -206,7 +206,7 @@ class NoCacheS3Test < Test::Unit::TestCase
     end
   end
 
-  context 'generating unpresigned_url' do
+  context 'generating url_without_cdn' do
     setup do
       object_stub = mock
       object_stub.stubs(:presigned_url).with(:get).returns('https://bucket.example/images/products/1/key.jpg?X-Amz-Signature=abc')
@@ -217,7 +217,7 @@ class NoCacheS3Test < Test::Unit::TestCase
       @instance.avatar = stub_file('pixel.gif', @gif_pixel)
       assert_equal(
         'https://bucket.example/images/products/1/key.jpg?X-Amz-Signature=abc',
-        @instance.avatar.send(:unpresigned_url, :original)
+        @instance.avatar.send(:url_without_cdn, :original)
       )
     end
   end

@@ -101,13 +101,8 @@ module Paperclip
         return unless synced_to?(self.class.main_store_id)
 
         if self.class.download_by_url
-          begin
-            URI.parse(unpresigned_url(style)).open do |tempfile|
-              create_tempfile(tempfile.read)
-            end
-          rescue OpenURI::HTTPError, SocketError, Errno::ECONNREFUSED, Net::OpenTimeout, Net::ReadTimeout => e
-            Paperclip.log("download_by_url failed (#{e.class}: #{e.message}), fallback to API")
-            download_from_store(self.class.main_store_id, style_key)
+          URI.parse(url_without_cdn(style)).open do |tempfile|
+            create_tempfile(tempfile.read)
           end
         else
           download_from_store(self.class.main_store_id, style_key)
@@ -209,7 +204,7 @@ module Paperclip
       # Прямой S3/bucket URL для внутреннего скачивания (reprocess).
       # Нельзя брать storage_url (CDN аккаунта): подпись AWS считается под host бакета
       # (X-Amz-SignedHeaders=host), а кастомный CDN на данный момент отдаёт 404.
-      def unpresigned_url(style)
+      def url_without_cdn(style)
         self.class.store_by(self.class.main_store_id).object(key(style)).presigned_url(:get)
       end
 
