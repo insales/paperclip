@@ -101,7 +101,7 @@ module Paperclip
         return unless synced_to?(self.class.main_store_id)
 
         if self.class.download_by_url
-          URI.parse(presigned_url(style)).open do |tempfile|
+          URI.parse(url_without_cdn(style)).open do |tempfile|
             create_tempfile(tempfile.read)
           end
         else
@@ -199,6 +199,13 @@ module Paperclip
         uri.query_values = result_params # тут addressable сам заэскейпит параметры
         uri.path = Addressable::URI.escape(uri.path)
         uri.to_s
+      end
+
+      # Прямой S3/bucket URL для внутреннего скачивания (reprocess).
+      # Нельзя брать storage_url (CDN аккаунта): подпись AWS считается под host бакета
+      # (X-Amz-SignedHeaders=host), а кастомный CDN на данный момент отдаёт 404.
+      def url_without_cdn(style)
+        self.class.store_by(self.class.main_store_id).object(key(style)).presigned_url(:get)
       end
 
       def synced_to?(store_id)
